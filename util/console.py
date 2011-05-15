@@ -29,7 +29,22 @@ def get_token():
     token=<serialized token>
     """
     conf_fname=os.path.expanduser("~/.vk_api_wrapper")
-    has_conf=os.path.isfile(conf_fname)
+    if os.path.isfile(conf_fname):
+        conf=ConfigParser.SafeConfigParser()
+        conf.read(conf_fname)
+        for pos_sect in enumerate(conf.sections()):
+            print "%d) %s"%pos_sect
+        _section=raw_input(_("Select account number (or hit Enter for new account): "))
+        if not _section:
+            return new_auth(conf_fname)
+        section=conf.sections()[int(_section)]
+        return pickle.loads(conf.get(section, "token"))
+    else:
+        return new_auth(conf_fname)
+
+
+def new_auth(conf_fname):
+    from datetime import datetime
     token=OAuth()
 
     app_id=raw_input(_("Application id: "))
@@ -44,8 +59,7 @@ def get_token():
 
     token.setup_by_confirmed_url(success_url)
     token_dump=pickle.dumps(token, pickle.HIGHEST_PROTOCOL)
-
-    section="app_%s_acc_%s"%(app_id, token.user_id)
+    section="app_%s_acc_%s_%s"%(app_id, token.user_id, datetime.today().strftime("%Y.%m.%d-%H:%m"))
     conf=ConfigParser.SafeConfigParser()
     conf.add_section(section)
     conf.set(section, 'auth_type', "oauth")
